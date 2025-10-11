@@ -1,2 +1,5 @@
-# Galaxy-assistant
-This is a batch file that allows you to silence the camera and check battery life.
+'''
+This GitHub is an assistant for silencing the Galaxy camera and checking battery status.
+
+There is an English version and a Korean version. Just run the "Galaxy assistant" batch file.
+'''
