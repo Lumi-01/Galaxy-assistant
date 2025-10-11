@@ -1,0 +1,205 @@
+@echo off
+setlocal enabledelayedexpansion
+title Galaxy Assistant
+
+::=================================================
+:: Variable Initialization
+::=================================================
+set "BATTERY_HEALTH=0"
+set "BATTERY_USAGE=0"
+set "CHARGE_AC=false"
+set "CHARGE_USB=false"
+set "BATTERY_LEVEL=0"
+set "BATTERY_VOLTAGE=0"
+set "VOLTAGE_DECIMAL=0"
+set "BATTERY_CYCLE=0"
+
+:MainMenu
+cls
+echo.
+echo ========================================================================================================
+echo Galaxy Assistant
+echo.
+echo 1. Please connect your device to the PC with a USB cable.
+echo.
+echo 2. Enable 'USB Debugging' in 'Developer options' and allow debugging when prompted.
+echo.
+echo 3. The shutter sound is silenced only when the phone is in Vibrate or Mute mode.
+echo ========================================================================================================
+echo. 
+echo [Menu]
+echo.
+echo 1. How to Enable USB Debugging
+echo.
+echo 2. Silence Camera Shutter
+echo.
+echo 3. Restore Camera Shutter Sound
+echo.
+echo 4. Check Battery Health and Cycle Count
+echo.
+echo 5. Exit
+echo. 
+set choice=
+echo ================================================
+set /p choice=Enter your choice and press Enter: 
+
+if "%choice%"=="1" goto ShowDebugInfo
+if "%choice%"=="2" goto SilenceShutter
+if "%choice%"=="3" goto RestoreShutter
+if "%choice%"=="4" goto CheckBattery
+if "%choice%"=="5" goto ExitScript
+goto MainMenu
+
+:ShowDebugInfo
+cls
+echo.
+echo ======================================================================================
+echo.
+echo                             [How to Enable USB Debugging]
+echo.
+echo 1. Open the [Settings] app on your phone.
+echo.
+echo 2. Go to [About phone] -> [Software information].
+echo.
+echo 3. Tap [Build number] 7 times until you see the 'Developer mode has been enabled' message.
+echo.
+echo 4. Go back to the main Settings screen and enter the new [Developer options] menu.
+echo.
+echo 5. Find and turn on the [USB Debugging] option.
+echo.
+echo 6. When prompted 'Allow USB debugging?' on your phone, tap [Allow].
+echo.
+echo ======================================================================================
+pause >nul | set /p "=Press any key to return to the main menu."
+goto MainMenu
+
+:SilenceShutter
+cls
+echo.
+echo -Log-
+echo Please do not close this window until the process is complete.
+echo.
+adb devices
+adb shell settings put system csc_pref_camera_forced_shuttersound_key 0
+echo.
+echo ================================================================================================
+echo.
+echo -Message-
+echo.
+if errorlevel 1 echo Failed to silence camera shutter. Please check your connection.
+if not errorlevel 1 echo Camera shutter has been successfully silenced.
+echo.
+echo ================================================================================================
+echo.
+echo -Log-
+echo.
+taskkill /f /t /IM adb.exe >nul 2>&1
+if errorlevel 1 echo Could not terminate ADB service (not running).
+if not errorlevel 1 echo Successfully terminated ADB service.
+echo.
+echo ================================================================================================
+pause >nul | set /p "=Press any key to return to the main menu."
+goto MainMenu
+
+:RestoreShutter
+cls
+echo.
+echo -Log-
+echo Please do not close this window until the process is complete.
+echo.
+adb devices
+adb shell settings put system csc_pref_camera_forced_shuttersound_key 1
+echo.
+echo ================================================================================================
+echo.
+echo -Message-
+echo.
+if errorlevel 1 echo Failed to restore camera shutter sound. Please check your connection.
+if not errorlevel 1 echo Camera shutter sound has been successfully restored.
+echo.
+echo ================================================================================================
+echo.
+echo -Log-
+echo.
+taskkill /f /t /IM adb.exe >nul 2>&1
+if errorlevel 1 echo Could not terminate ADB service (not running).
+if not errorlevel 1 echo Successfully terminated ADB service.
+echo.
+echo ================================================================================================
+pause >nul | set /p "=Press any key to return to the main menu."
+goto MainMenu
+
+:CheckBattery
+cls
+echo.
+echo -Log-
+echo Please do not close this window until the process is complete.
+echo.
+adb devices
+adb shell dumpsys battery > battery_log.txt
+
+:: AC/USB Charging Status
+for /f "tokens=3" %%A in ('findstr /C:"AC powered" battery_log.txt') do set "CHARGE_AC=%%A"
+for /f "tokens=3" %%A in ('findstr /C:"USB powered" battery_log.txt') do set "CHARGE_USB=%%A"
+
+:: Battery Health/Usage
+for /f "tokens=2 delims=[] " %%A in ('findstr /C:"mSavedBatteryAsoc" battery_log.txt') do set "BATTERY_HEALTH=%%A"
+for /f "tokens=2 delims=[] " %%A in ('findstr /C:"mSavedBatteryUsage" battery_log.txt') do set "BATTERY_USAGE=%%A"
+
+:: Battery Level (handles potential spaces)
+set "BATTERY_LEVEL=0"
+for /f "tokens=2 delims=:" %%A in ('findstr /C:"  level:" battery_log.txt') do (
+    set "BATTERY_LEVEL=%%A"
+    set "BATTERY_LEVEL=!BATTERY_LEVEL: =!"
+)
+
+:: Battery Voltage
+for /f "tokens=2" %%A in ('findstr /C:"voltage: " battery_log.txt') do (
+    set /a "VOLTAGE=%%A"
+    set /a "BATTERY_VOLTAGE=VOLTAGE / 1000"
+    set /a "VOLTAGE_DECIMAL=VOLTAGE %% 1000"
+)
+
+:: Cycle Count
+set /a "BATTERY_CYCLE=BATTERY_USAGE / 100"
+
+:: Charging Status Text
+set "AC_STATUS=No"
+set "USB_STATUS=No"
+if "%CHARGE_AC%"=="true" set "AC_STATUS=Yes"
+if "%CHARGE_USB%"=="true" set "USB_STATUS=Yes"
+
+echo.
+echo ================================================================================================
+echo Battery Status:
+echo.
+echo AC Charging: %AC_STATUS%
+echo USB Charging: %USB_STATUS%
+echo.
+echo Battery Level: %BATTERY_LEVEL%[%%]
+echo Battery Voltage: %BATTERY_VOLTAGE%.%VOLTAGE_DECIMAL%[V]
+echo Battery Health: %BATTERY_HEALTH%[%%]
+echo Cycle Count: %BATTERY_CYCLE%
+echo.
+echo ================================================================================================
+echo.
+echo -Message-
+echo.
+if errorlevel 1 echo Failed to retrieve battery information. Please check your connection.
+if not errorlevel 1 echo Successfully retrieved battery information.
+echo.
+echo ================================================================================================
+echo.
+echo -Log-
+echo.
+taskkill /f /t /IM adb.exe >nul 2>&1
+if errorlevel 1 echo Could not terminate ADB service (not running).
+if not errorlevel 1 echo Successfully terminated ADB service.
+echo.
+echo ================================================================================================
+pause >nul | set /p "=Press any key to return to the main menu."
+goto MainMenu
+
+:ExitScript
+taskkill /f /t /IM adb.exe >nul 2>&1
+exit

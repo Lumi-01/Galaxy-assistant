@@ -1,0 +1,205 @@
+@echo off
+setlocal enabledelayedexpansion
+title Galaxy assistant
+
+::=================================================
+:: 초기화
+::=================================================
+set "BATTERY_LIFE=0"
+set "BATTERY_USAGE=0"
+set "CHARGE_AC=false"
+set "CHARGE_USB=false"
+set "BATTERY_LEVEL=0"
+set "BATTERY_VOLTAGE=0"
+set "VOLTAGE_DECIMAL=0"
+set "BATTERY_CYCLE=0"
+
+:menu
+cls
+echo.
+echo ========================================================================================================
+echo Galaxy assistant
+echo.
+echo 1. 디바이스를 PC에 케이블로 연결해주세요.
+echo.
+echo 2. '개발자 옵션'에서 'USB 디버깅'을 활성화하고, PC 연결 시 디버깅을 허용해주세요.
+echo.
+echo 3. 카메라 무음은 스마트폰이 '진동' 또는 '무음' 모드일 때만 적용됩니다.
+echo ========================================================================================================
+echo. 
+echo [메뉴]
+echo.
+echo 1. USB 디버깅 활성화 방법
+echo.
+echo 2. 카메라 무음 설정하기
+echo.
+echo 3. 카메라 무음 해제하기 (원상복구)
+echo.
+echo 4. 배터리 수명 및 사이클 확인
+echo.
+echo 5. 프로그램 종료
+echo. 
+set _ok=
+echo ================================================
+set /p _ok= 원하시는 메뉴를 입력 후 엔터를 눌러주세요. :
+
+if "%_ok%"=="1" goto menu1
+if "%_ok%"=="2" goto menu2
+if "%_ok%"=="3" goto menu3
+if "%_ok%"=="4" goto menu4
+if "%_ok%"=="5" goto menu5
+goto menu
+
+:menu1
+cls
+echo.
+echo ======================================================================================
+echo.
+echo                         [USB 디버깅 활성화 방법]
+echo.
+echo 1. 스마트폰 [설정] 앱 실행
+echo.
+echo 2. [휴대전화 정보] 에서 [소프트웨어 정보] 진입
+echo.
+echo 3. [빌드번호] 항목을 7번 연속으로 터치 ('개발자 모드를 켰습니다' 메시지가 나타납니다)
+echo.
+echo 4. 설정 첫 화면으로 돌아가면 생긴 [개발자 옵션] 진입
+echo.
+echo 5. [USB 디버깅] 항목을 찾아 활성화(ON)
+echo.
+echo 6. PC와 연결 시 'USB 디버깅을 허용하시겠습니까?' 창에서 [허용] 선택
+echo.
+echo ======================================================================================
+pause >nul | set /p "=메인 메뉴로 돌아가려면 아무 키나 누르세요."
+goto menu
+
+:menu2
+cls
+echo.
+echo -Log-
+echo 작업이 끝날 때 까지 창을 종료하지 마세요.
+echo.
+adb devices
+adb shell settings put system csc_pref_camera_forced_shuttersound_key 0
+echo.
+echo ================================================================================================
+echo.
+echo -Message-
+echo.
+if errorlevel 1 echo 카메라 무음 설정을 실패했습니다. 연결 상태를 확인해 주세요.
+if not errorlevel 1 echo 카메라 무음 설정을 완료했습니다.
+echo.
+echo ================================================================================================
+echo.
+echo -Log-
+echo.
+taskkill /f /t /IM adb.exe >nul 2>&1
+if errorlevel 1 echo ADB 서비스를 종료하지 못했습니다. ADB서비스가 실행 중이 아닙니다.
+if not errorlevel 1 echo ADB 서비스를 성공적으로 종료하였습니다.
+echo.
+echo ================================================================================================
+pause >nul | set /p "=메인 메뉴로 돌아가려면 아무 키나 누르세요."
+goto menu
+
+:menu3
+cls
+echo.
+echo -Log-
+echo 작업이 끝날 때 까지 창을 종료하지 마세요.
+echo.
+adb devices
+adb shell settings put system csc_pref_camera_forced_shuttersound_key 1
+echo.
+echo ================================================================================================
+echo.
+echo -Message-
+echo.
+if errorlevel 1 echo 카메라 무음 해제를 실패했습니다. 연결 상태를 확인해 주세요.
+if not errorlevel 1 echo 카메라 무음 해제 설정을 완료했습니다.
+echo.
+echo ================================================================================================
+echo.
+echo -Log-
+echo.
+taskkill /f /t /IM adb.exe >nul 2>&1
+if errorlevel 1 echo ADB 서비스를 종료하지 못했습니다. ADB서비스가 실행 중이 아닙니다.
+if not errorlevel 1 echo ADB 서비스를 성공적으로 종료하였습니다.
+echo.
+echo ================================================================================================
+pause >nul | set /p "=메인 메뉴로 돌아가려면 아무 키나 누르세요."
+goto menu
+
+:menu4
+cls
+echo.
+echo -Log-
+echo 작업이 끝날 때 까지 창을 종료하지 마세요.
+echo.
+adb devices
+adb shell dumpsys battery > battery_log.txt
+
+:: AC/USB 충전 상태
+for /f "tokens=3" %%A in ('findstr /C:"AC powered" battery_log.txt') do set "CHARGE_AC=%%A"
+for /f "tokens=3" %%A in ('findstr /C:"USB powered" battery_log.txt') do set "CHARGE_USB=%%A"
+
+:: 배터리 수명/사용량
+for /f "tokens=2 delims=[] " %%A in ('findstr /C:"mSavedBatteryAsoc" battery_log.txt') do set "BATTERY_LIFE=%%A"
+for /f "tokens=2 delims=[] " %%A in ('findstr /C:"mSavedBatteryUsage" battery_log.txt') do set "BATTERY_USAGE=%%A"
+
+:: 배터리 잔량 (공백 있는 경우 처리)
+set "BATTERY_LEVEL=0"
+for /f "tokens=2 delims=:" %%A in ('findstr /C:"  level:" battery_log.txt') do (
+    set "BATTERY_LEVEL=%%A"
+    set "BATTERY_LEVEL=!BATTERY_LEVEL: =!"
+)
+
+:: 배터리 전압
+for /f "tokens=2" %%A in ('findstr /C:"voltage: " battery_log.txt') do (
+    set /a "VOLTAGE=%%A"
+    set /a "BATTERY_VOLTAGE=VOLTAGE / 1000"
+    set /a "VOLTAGE_DECIMAL=VOLTAGE %% 1000"
+)
+
+:: 배터리 사이클
+set /a "BATTERY_CYCLE=BATTERY_USAGE / 100"
+
+:: 충전 상태
+set "AC_STATUS=아니오"
+set "USB_STATUS=아니오"
+if "%CHARGE_AC%"=="true" set "AC_STATUS=예"
+if "%CHARGE_USB%"=="true" set "USB_STATUS=예"
+
+echo.
+echo ================================================================================================
+echo 배터리 상태:
+echo.
+echo AC 충전: %AC_STATUS%
+echo USB 충전: %USB_STATUS%
+echo.
+echo 배터리 잔량: %BATTERY_LEVEL%[%%]
+echo 배터리 전압: %BATTERY_VOLTAGE%.%VOLTAGE_DECIMAL%[V]
+echo 배터리 수명: %BATTERY_LIFE%[%%]
+echo 배터리 사이클: %BATTERY_CYCLE%[회]
+echo.
+echo ================================================================================================
+echo.
+echo -Message-
+echo.
+if errorlevel 1 echo 배터리 정보를 불러오지 못했습니다. 연결 상태를 확인해 주세요.
+if not errorlevel 1 echo 배터리 정보를 정상적으로 불러왔어요.
+echo.
+echo ================================================================================================
+echo.
+echo -Log-
+echo.
+taskkill /f /t /IM adb.exe >nul 2>&1
+if errorlevel 1 echo ADB 서비스를 종료하지 못했습니다. ADB서비스가 실행 중이 아닙니다.
+if not errorlevel 1 echo ADB 서비스를 성공적으로 종료하였습니다.
+echo.
+echo ================================================================================================
+pause >nul | set /p "=메인 메뉴로 돌아가려면 아무 키나 누르세요."
+goto menu
+
+:menu5
+taskkill /f /t /IM adb.exe >nul 2>&1
+exit
