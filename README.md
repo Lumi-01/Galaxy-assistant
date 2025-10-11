@@ -12,6 +12,8 @@ There is an English version and a Korean version. Just run the "Galaxy assistant
 When updating the software, the camera will be muted.
 
 Depending on the phone model, the battery status may not be displayed properly.
+
+This version was tested on Galaxy S25+ OneUi 8.1
 ```
 
 # Download
