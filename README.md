@@ -9,7 +9,7 @@ There is an English version and a Korean version. Just run the "Galaxy assistant
 # Caution
 
 ```
-When updating the software, the camera will be muted.
+When you update the software, the camera mute setting will be disabled.
 
 Depending on the phone model, the battery status may not be displayed properly.
 
