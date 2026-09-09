@@ -1,205 +1,115 @@
 @echo off
-setlocal enabledelayedexpansion
-title Galaxy assistant
+chcp 65001 >nul
+setlocal EnableExtensions EnableDelayedExpansion
+title Galaxy Assistant
 
-::=================================================
-:: ÃÊ±âÈ­
-::=================================================
-set "BATTERY_LIFE=0"
-set "BATTERY_USAGE=0"
-set "CHARGE_AC=false"
-set "CHARGE_USB=false"
-set "BATTERY_LEVEL=0"
-set "BATTERY_VOLTAGE=0"
-set "VOLTAGE_DECIMAL=0"
-set "BATTERY_CYCLE=0"
+call :require_adb || exit /b 1
 
 :menu
 cls
+echo ================================================================
+echo Galaxy Assistant
+echo ================================================================
+echo 1. USB ë””ë²„ê¹… í™œì„±í™” ë°©ë²•
+echo 2. ì¹´ë©”ë¼ ì…”í„°ìŒ ì„¤ì • ë¹„í™œì„±í™”
+echo 3. ì¹´ë©”ë¼ ì…”í„°ìŒ ì„¤ì • ë³µì›
+echo 4. ë°°í„°ë¦¬ ì •ë³´ í™•ì¸
+echo 5. ì¢…ë£Œ
 echo.
-echo ========================================================================================================
-echo Galaxy assistant
-echo.
-echo 1. µð¹ÙÀÌ½º¸¦ PC¿¡ ÄÉÀÌºí·Î ¿¬°áÇØÁÖ¼¼¿ä.
-echo.
-echo 2. '°³¹ßÀÚ ¿É¼Ç'¿¡¼­ 'USB µð¹ö±ë'À» È°¼ºÈ­ÇÏ°í, PC ¿¬°á ½Ã µð¹ö±ëÀ» Çã¿ëÇØÁÖ¼¼¿ä.
-echo.
-echo 3. Ä«¸Þ¶ó ¹«À½Àº ½º¸¶Æ®ÆùÀÌ 'Áøµ¿' ¶Ç´Â '¹«À½' ¸ðµåÀÏ ¶§¸¸ Àû¿ëµË´Ï´Ù.
-echo ========================================================================================================
-echo. 
-echo [¸Þ´º]
-echo.
-echo 1. USB µð¹ö±ë È°¼ºÈ­ ¹æ¹ý
-echo.
-echo 2. Ä«¸Þ¶ó ¹«À½ ¼³Á¤ÇÏ±â
-echo.
-echo 3. Ä«¸Þ¶ó ¹«À½ ÇØÁ¦ÇÏ±â (¿ø»óº¹±¸)
-echo.
-echo 4. ¹èÅÍ¸® ¼ö¸í ¹× »çÀÌÅ¬ È®ÀÎ
-echo.
-echo 5. ÇÁ·Î±×·¥ Á¾·á
-echo. 
-set _ok=
-echo ================================================
-set /p _ok= ¿øÇÏ½Ã´Â ¸Þ´º¸¦ ÀÔ·Â ÈÄ ¿£ÅÍ¸¦ ´­·¯ÁÖ¼¼¿ä. :
-
-if "%_ok%"=="1" goto menu1
-if "%_ok%"=="2" goto menu2
-if "%_ok%"=="3" goto menu3
-if "%_ok%"=="4" goto menu4
-if "%_ok%"=="5" goto menu5
+set "choice="
+set /p "choice=ë©”ë‰´ ë²ˆí˜¸ë¥¼ ìž…ë ¥í•˜ì„¸ìš”: "
+if "%choice%"=="1" goto debug_help
+if "%choice%"=="2" goto silence
+if "%choice%"=="3" goto restore
+if "%choice%"=="4" goto battery
+if "%choice%"=="5" exit /b 0
 goto menu
 
-:menu1
+:require_adb
+where adb >nul 2>&1
+if errorlevel 1 (
+  echo ADBë¥¼ ì°¾ì§€ ëª»í–ˆìŠµë‹ˆë‹¤. Android Platform Toolsë¥¼ ì„¤ì¹˜í•˜ê±°ë‚˜ adb.exeë¥¼ ì´ íŒŒì¼ê³¼ ê°™ì€ í´ë”ì— ë„£ìœ¼ì„¸ìš”.
+  pause
+  exit /b 1
+)
+exit /b 0
+
+:require_device
+adb get-state 2>nul | findstr /x /c:"device" >nul
+if errorlevel 1 (
+  echo ìŠ¹ì¸ëœ ê¸°ê¸°ë¥¼ ì°¾ì§€ ëª»í–ˆìŠµë‹ˆë‹¤. USB ì—°ê²°ì„ í™•ì¸í•˜ê³  íœ´ëŒ€ì „í™”ì—ì„œ ë””ë²„ê¹…ì„ í—ˆìš©í•˜ì„¸ìš”.
+  exit /b 1
+)
+exit /b 0
+
+:debug_help
 cls
-echo.
-echo ======================================================================================
-echo.
-echo                         [USB µð¹ö±ë È°¼ºÈ­ ¹æ¹ý]
-echo.
-echo 1. ½º¸¶Æ®Æù [¼³Á¤] ¾Û ½ÇÇà
-echo.
-echo 2. [ÈÞ´ëÀüÈ­ Á¤º¸] ¿¡¼­ [¼ÒÇÁÆ®¿þ¾î Á¤º¸] ÁøÀÔ
-echo.
-echo 3. [ºôµå¹øÈ£] Ç×¸ñÀ» 7¹ø ¿¬¼ÓÀ¸·Î ÅÍÄ¡ ('°³¹ßÀÚ ¸ðµå¸¦ Ä×½À´Ï´Ù' ¸Þ½ÃÁö°¡ ³ªÅ¸³³´Ï´Ù)
-echo.
-echo 4. ¼³Á¤ Ã¹ È­¸éÀ¸·Î µ¹¾Æ°¡¸é »ý±ä [°³¹ßÀÚ ¿É¼Ç] ÁøÀÔ
-echo.
-echo 5. [USB µð¹ö±ë] Ç×¸ñÀ» Ã£¾Æ È°¼ºÈ­(ON)
-echo.
-echo 6. PC¿Í ¿¬°á ½Ã 'USB µð¹ö±ëÀ» Çã¿ëÇÏ½Ã°Ú½À´Ï±î?' Ã¢¿¡¼­ [Çã¿ë] ¼±ÅÃ
-echo.
-echo ======================================================================================
-pause >nul | set /p "=¸ÞÀÎ ¸Þ´º·Î µ¹¾Æ°¡·Á¸é ¾Æ¹« Å°³ª ´©¸£¼¼¿ä."
+echo 1. ì„¤ì • ^> íœ´ëŒ€ì „í™” ì •ë³´ ^> ì†Œí”„íŠ¸ì›¨ì–´ ì •ë³´ë¥¼ ì—½ë‹ˆë‹¤.
+echo 2. ë¹Œë“œë²ˆí˜¸ë¥¼ 7ë²ˆ ëˆ„ë¦…ë‹ˆë‹¤.
+echo 3. ê°œë°œìž ì˜µì…˜ì—ì„œ USB ë””ë²„ê¹…ì„ ì¼­ë‹ˆë‹¤.
+echo 4. íœ´ëŒ€ì „í™”ë¥¼ ì—°ê²°í•˜ê³  ë””ë²„ê¹… í—ˆìš© ì°½ì„ ìŠ¹ì¸í•©ë‹ˆë‹¤.
+pause
 goto menu
 
-:menu2
+:silence
 cls
-echo.
-echo -Log-
-echo ÀÛ¾÷ÀÌ ³¡³¯ ¶§ ±îÁö Ã¢À» Á¾·áÇÏÁö ¸¶¼¼¿ä.
-echo.
-adb devices
+call :require_device || goto wait_menu
 adb shell settings put system csc_pref_camera_forced_shuttersound_key 0
-echo.
-echo ================================================================================================
-echo.
-echo -Message-
-echo.
-if errorlevel 1 echo Ä«¸Þ¶ó ¹«À½ ¼³Á¤À» ½ÇÆÐÇß½À´Ï´Ù. ¿¬°á »óÅÂ¸¦ È®ÀÎÇØ ÁÖ¼¼¿ä.
-if not errorlevel 1 echo Ä«¸Þ¶ó ¹«À½ ¼³Á¤À» ¿Ï·áÇß½À´Ï´Ù.
-echo.
-echo ================================================================================================
-echo.
-echo -Log-
-echo.
-taskkill /f /t /IM adb.exe >nul 2>&1
-if errorlevel 1 echo ADB ¼­ºñ½º¸¦ Á¾·áÇÏÁö ¸øÇß½À´Ï´Ù. ADB¼­ºñ½º°¡ ½ÇÇà ÁßÀÌ ¾Æ´Õ´Ï´Ù.
-if not errorlevel 1 echo ADB ¼­ºñ½º¸¦ ¼º°øÀûÀ¸·Î Á¾·áÇÏ¿´½À´Ï´Ù.
-echo.
-echo ================================================================================================
-pause >nul | set /p "=¸ÞÀÎ ¸Þ´º·Î µ¹¾Æ°¡·Á¸é ¾Æ¹« Å°³ª ´©¸£¼¼¿ä."
-goto menu
+if errorlevel 1 (
+  echo ì„¤ì • ë³€ê²½ì— ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.
+) else (
+  echo ì¹´ë©”ë¼ ì…”í„°ìŒ ê°•ì œ ì„¤ì •ì„ ë¹„í™œì„±í™”í–ˆìŠµë‹ˆë‹¤.
+)
+goto wait_menu
 
-:menu3
+:restore
 cls
-echo.
-echo -Log-
-echo ÀÛ¾÷ÀÌ ³¡³¯ ¶§ ±îÁö Ã¢À» Á¾·áÇÏÁö ¸¶¼¼¿ä.
-echo.
-adb devices
+call :require_device || goto wait_menu
 adb shell settings put system csc_pref_camera_forced_shuttersound_key 1
-echo.
-echo ================================================================================================
-echo.
-echo -Message-
-echo.
-if errorlevel 1 echo Ä«¸Þ¶ó ¹«À½ ÇØÁ¦¸¦ ½ÇÆÐÇß½À´Ï´Ù. ¿¬°á »óÅÂ¸¦ È®ÀÎÇØ ÁÖ¼¼¿ä.
-if not errorlevel 1 echo Ä«¸Þ¶ó ¹«À½ ÇØÁ¦ ¼³Á¤À» ¿Ï·áÇß½À´Ï´Ù.
-echo.
-echo ================================================================================================
-echo.
-echo -Log-
-echo.
-taskkill /f /t /IM adb.exe >nul 2>&1
-if errorlevel 1 echo ADB ¼­ºñ½º¸¦ Á¾·áÇÏÁö ¸øÇß½À´Ï´Ù. ADB¼­ºñ½º°¡ ½ÇÇà ÁßÀÌ ¾Æ´Õ´Ï´Ù.
-if not errorlevel 1 echo ADB ¼­ºñ½º¸¦ ¼º°øÀûÀ¸·Î Á¾·áÇÏ¿´½À´Ï´Ù.
-echo.
-echo ================================================================================================
-pause >nul | set /p "=¸ÞÀÎ ¸Þ´º·Î µ¹¾Æ°¡·Á¸é ¾Æ¹« Å°³ª ´©¸£¼¼¿ä."
-goto menu
+if errorlevel 1 (
+  echo ì„¤ì • ë³µì›ì— ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.
+) else (
+  echo ì¹´ë©”ë¼ ì…”í„°ìŒ ì„¤ì •ì„ ë³µì›í–ˆìŠµë‹ˆë‹¤.
+)
+goto wait_menu
 
-:menu4
+:battery
 cls
-echo.
-echo -Log-
-echo ÀÛ¾÷ÀÌ ³¡³¯ ¶§ ±îÁö Ã¢À» Á¾·áÇÏÁö ¸¶¼¼¿ä.
-echo.
-adb devices
-adb shell dumpsys battery > battery_log.txt
-
-:: AC/USB ÃæÀü »óÅÂ
-for /f "tokens=3" %%A in ('findstr /C:"AC powered" battery_log.txt') do set "CHARGE_AC=%%A"
-for /f "tokens=3" %%A in ('findstr /C:"USB powered" battery_log.txt') do set "CHARGE_USB=%%A"
-
-:: ¹èÅÍ¸® ¼ö¸í/»ç¿ë·®
-for /f "tokens=2 delims=[] " %%A in ('findstr /C:"mSavedBatteryAsoc" battery_log.txt') do set "BATTERY_LIFE=%%A"
-for /f "tokens=2 delims=[] " %%A in ('findstr /C:"mSavedBatteryUsage" battery_log.txt') do set "BATTERY_USAGE=%%A"
-
-:: ¹èÅÍ¸® ÀÜ·® (°ø¹é ÀÖ´Â °æ¿ì Ã³¸®)
-set "BATTERY_LEVEL=0"
-for /f "tokens=2 delims=:" %%A in ('findstr /C:"  level:" battery_log.txt') do (
-    set "BATTERY_LEVEL=%%A"
-    set "BATTERY_LEVEL=!BATTERY_LEVEL: =!"
+call :require_device || goto wait_menu
+set "battery_log=%TEMP%\galaxy-assistant-%RANDOM%-%RANDOM%.txt"
+adb shell dumpsys battery >"%battery_log%" 2>nul
+if errorlevel 1 (
+  echo ë°°í„°ë¦¬ ì •ë³´ë¥¼ ë¶ˆëŸ¬ì˜¤ì§€ ëª»í–ˆìŠµë‹ˆë‹¤.
+  del /q "%battery_log%" >nul 2>&1
+  goto wait_menu
 )
-
-:: ¹èÅÍ¸® Àü¾Ð
-for /f "tokens=2" %%A in ('findstr /C:"voltage: " battery_log.txt') do (
-    set /a "VOLTAGE=%%A"
-    set /a "BATTERY_VOLTAGE=VOLTAGE / 1000"
-    set /a "VOLTAGE_DECIMAL=VOLTAGE %% 1000"
+set "level=N/A"
+set "voltage=N/A"
+set "health=N/A"
+set "usage=N/A"
+for /f "tokens=2 delims=:" %%A in ('findstr /r /c:"^[ ]*level:" "%battery_log%"') do set "level=%%A"
+for /f "tokens=2 delims=:" %%A in ('findstr /r /c:"^[ ]*voltage:" "%battery_log%"') do set "voltage=%%A"
+for /f "tokens=2 delims=:" %%A in ('findstr /c:"mSavedBatteryAsoc" "%battery_log%"') do set "health=%%A"
+for /f "tokens=2 delims=:" %%A in ('findstr /c:"mSavedBatteryUsage" "%battery_log%"') do set "usage=%%A"
+for %%V in (level voltage health usage) do for /f "tokens=*" %%A in ("!%%V!") do set "%%V=%%A"
+set "voltage_text=%voltage% mV"
+set "cycles=N/A"
+set /a voltage_number=voltage 2>nul
+if not errorlevel 1 (
+  set /a voltage_whole=voltage_number / 1000, voltage_fraction=voltage_number %% 1000
+  set "voltage_fraction=00!voltage_fraction!"
+  set "voltage_text=!voltage_whole!.!voltage_fraction:~-3! V"
 )
+set /a usage_number=usage 2>nul
+if not errorlevel 1 set /a cycles=usage_number / 100
+echo ë°°í„°ë¦¬ ìž”ëŸ‰: %level%%%
+echo ë°°í„°ë¦¬ ì „ì••: %voltage_text%
+echo ë°°í„°ë¦¬ ìˆ˜ëª…: %health%%%
+echo ì˜ˆìƒ ì‚¬ì´í´: %cycles%íšŒ
+del /q "%battery_log%" >nul 2>&1
+goto wait_menu
 
-:: ¹èÅÍ¸® »çÀÌÅ¬
-set /a "BATTERY_CYCLE=BATTERY_USAGE / 100"
-
-:: ÃæÀü »óÅÂ
-set "AC_STATUS=¾Æ´Ï¿À"
-set "USB_STATUS=¾Æ´Ï¿À"
-if "%CHARGE_AC%"=="true" set "AC_STATUS=¿¹"
-if "%CHARGE_USB%"=="true" set "USB_STATUS=¿¹"
-
+:wait_menu
 echo.
-echo ================================================================================================
-echo ¹èÅÍ¸® »óÅÂ:
-echo.
-echo AC ÃæÀü: %AC_STATUS%
-echo USB ÃæÀü: %USB_STATUS%
-echo.
-echo ¹èÅÍ¸® ÀÜ·®: %BATTERY_LEVEL%[%%]
-echo ¹èÅÍ¸® Àü¾Ð: %BATTERY_VOLTAGE%.%VOLTAGE_DECIMAL%[V]
-echo ¹èÅÍ¸® ¼ö¸í: %BATTERY_LIFE%[%%]
-echo ¹èÅÍ¸® »çÀÌÅ¬: %BATTERY_CYCLE%[È¸]
-echo.
-echo ================================================================================================
-echo.
-echo -Message-
-echo.
-if errorlevel 1 echo ¹èÅÍ¸® Á¤º¸¸¦ ºÒ·¯¿ÀÁö ¸øÇß½À´Ï´Ù. ¿¬°á »óÅÂ¸¦ È®ÀÎÇØ ÁÖ¼¼¿ä.
-if not errorlevel 1 echo ¹èÅÍ¸® Á¤º¸¸¦ Á¤»óÀûÀ¸·Î ºÒ·¯¿Ô¾î¿ä.
-echo.
-echo ================================================================================================
-echo.
-echo -Log-
-echo.
-taskkill /f /t /IM adb.exe >nul 2>&1
-if errorlevel 1 echo ADB ¼­ºñ½º¸¦ Á¾·áÇÏÁö ¸øÇß½À´Ï´Ù. ADB¼­ºñ½º°¡ ½ÇÇà ÁßÀÌ ¾Æ´Õ´Ï´Ù.
-if not errorlevel 1 echo ADB ¼­ºñ½º¸¦ ¼º°øÀûÀ¸·Î Á¾·áÇÏ¿´½À´Ï´Ù.
-echo.
-echo ================================================================================================
-pause >nul | set /p "=¸ÞÀÎ ¸Þ´º·Î µ¹¾Æ°¡·Á¸é ¾Æ¹« Å°³ª ´©¸£¼¼¿ä."
+pause
 goto menu
-
-:menu5
-taskkill /f /t /IM adb.exe >nul 2>&1
-exit
