@@ -1,205 +1,114 @@
 @echo off
-setlocal enabledelayedexpansion
+setlocal EnableExtensions EnableDelayedExpansion
 title Galaxy Assistant
 
-::=================================================
-:: Variable Initialization
-::=================================================
-set "BATTERY_HEALTH=0"
-set "BATTERY_USAGE=0"
-set "CHARGE_AC=false"
-set "CHARGE_USB=false"
-set "BATTERY_LEVEL=0"
-set "BATTERY_VOLTAGE=0"
-set "VOLTAGE_DECIMAL=0"
-set "BATTERY_CYCLE=0"
+call :require_adb || exit /b 1
 
-:MainMenu
+:menu
 cls
-echo.
-echo ========================================================================================================
+echo ================================================================
 echo Galaxy Assistant
-echo.
-echo 1. Please connect your device to the PC with a USB cable.
-echo.
-echo 2. Enable 'USB Debugging' in 'Developer options' and allow debugging when prompted.
-echo.
-echo 3. The shutter sound is silenced only when the phone is in Vibrate or Mute mode.
-echo ========================================================================================================
-echo. 
-echo [Menu]
-echo.
-echo 1. How to Enable USB Debugging
-echo.
-echo 2. Silence Camera Shutter
-echo.
-echo 3. Restore Camera Shutter Sound
-echo.
-echo 4. Check Battery Health and Cycle Count
-echo.
+echo ================================================================
+echo 1. USB debugging instructions
+echo 2. Disable forced camera shutter sound
+echo 3. Restore camera shutter sound
+echo 4. Check battery information
 echo 5. Exit
-echo. 
-set choice=
-echo ================================================
-set /p choice=Enter your choice and press Enter: 
+echo.
+set "choice="
+set /p "choice=Choose an option: "
+if "%choice%"=="1" goto debug_help
+if "%choice%"=="2" goto silence
+if "%choice%"=="3" goto restore
+if "%choice%"=="4" goto battery
+if "%choice%"=="5" exit /b 0
+goto menu
 
-if "%choice%"=="1" goto ShowDebugInfo
-if "%choice%"=="2" goto SilenceShutter
-if "%choice%"=="3" goto RestoreShutter
-if "%choice%"=="4" goto CheckBattery
-if "%choice%"=="5" goto ExitScript
-goto MainMenu
+:require_adb
+where adb >nul 2>&1
+if errorlevel 1 (
+  echo ADB was not found. Install Android Platform Tools or place adb.exe next to this script.
+  pause
+  exit /b 1
+)
+exit /b 0
 
-:ShowDebugInfo
+:require_device
+adb get-state 2>nul | findstr /x /c:"device" >nul
+if errorlevel 1 (
+  echo No authorized device was found. Check the USB cable and approve USB debugging on the phone.
+  exit /b 1
+)
+exit /b 0
+
+:debug_help
 cls
-echo.
-echo ======================================================================================
-echo.
-echo                             [How to Enable USB Debugging]
-echo.
-echo 1. Open the [Settings] app on your phone.
-echo.
-echo 2. Go to [About phone] -> [Software information].
-echo.
-echo 3. Tap [Build number] 7 times until you see the 'Developer mode has been enabled' message.
-echo.
-echo 4. Go back to the main Settings screen and enter the new [Developer options] menu.
-echo.
-echo 5. Find and turn on the [USB Debugging] option.
-echo.
-echo 6. When prompted 'Allow USB debugging?' on your phone, tap [Allow].
-echo.
-echo ======================================================================================
-pause >nul | set /p "=Press any key to return to the main menu."
-goto MainMenu
+echo 1. Open Settings ^> About phone ^> Software information.
+echo 2. Tap Build number seven times.
+echo 3. Open Developer options and enable USB debugging.
+echo 4. Connect the phone and approve the authorization prompt.
+pause
+goto menu
 
-:SilenceShutter
+:silence
 cls
-echo.
-echo -Log-
-echo Please do not close this window until the process is complete.
-echo.
-adb devices
+call :require_device || goto wait_menu
 adb shell settings put system csc_pref_camera_forced_shuttersound_key 0
-echo.
-echo ================================================================================================
-echo.
-echo -Message-
-echo.
-if errorlevel 1 echo Failed to silence camera shutter. Please check your connection.
-if not errorlevel 1 echo Camera shutter has been successfully silenced.
-echo.
-echo ================================================================================================
-echo.
-echo -Log-
-echo.
-taskkill /f /t /IM adb.exe >nul 2>&1
-if errorlevel 1 echo Could not terminate ADB service (not running).
-if not errorlevel 1 echo Successfully terminated ADB service.
-echo.
-echo ================================================================================================
-pause >nul | set /p "=Press any key to return to the main menu."
-goto MainMenu
+if errorlevel 1 (
+  echo Failed to change the setting.
+) else (
+  echo The forced shutter-sound setting was disabled.
+)
+goto wait_menu
 
-:RestoreShutter
+:restore
 cls
-echo.
-echo -Log-
-echo Please do not close this window until the process is complete.
-echo.
-adb devices
+call :require_device || goto wait_menu
 adb shell settings put system csc_pref_camera_forced_shuttersound_key 1
-echo.
-echo ================================================================================================
-echo.
-echo -Message-
-echo.
-if errorlevel 1 echo Failed to restore camera shutter sound. Please check your connection.
-if not errorlevel 1 echo Camera shutter sound has been successfully restored.
-echo.
-echo ================================================================================================
-echo.
-echo -Log-
-echo.
-taskkill /f /t /IM adb.exe >nul 2>&1
-if errorlevel 1 echo Could not terminate ADB service (not running).
-if not errorlevel 1 echo Successfully terminated ADB service.
-echo.
-echo ================================================================================================
-pause >nul | set /p "=Press any key to return to the main menu."
-goto MainMenu
+if errorlevel 1 (
+  echo Failed to restore the setting.
+) else (
+  echo The shutter-sound setting was restored.
+)
+goto wait_menu
 
-:CheckBattery
+:battery
 cls
-echo.
-echo -Log-
-echo Please do not close this window until the process is complete.
-echo.
-adb devices
-adb shell dumpsys battery > battery_log.txt
-
-:: AC/USB Charging Status
-for /f "tokens=3" %%A in ('findstr /C:"AC powered" battery_log.txt') do set "CHARGE_AC=%%A"
-for /f "tokens=3" %%A in ('findstr /C:"USB powered" battery_log.txt') do set "CHARGE_USB=%%A"
-
-:: Battery Health/Usage
-for /f "tokens=2 delims=[] " %%A in ('findstr /C:"mSavedBatteryAsoc" battery_log.txt') do set "BATTERY_HEALTH=%%A"
-for /f "tokens=2 delims=[] " %%A in ('findstr /C:"mSavedBatteryUsage" battery_log.txt') do set "BATTERY_USAGE=%%A"
-
-:: Battery Level (handles potential spaces)
-set "BATTERY_LEVEL=0"
-for /f "tokens=2 delims=:" %%A in ('findstr /C:"  level:" battery_log.txt') do (
-    set "BATTERY_LEVEL=%%A"
-    set "BATTERY_LEVEL=!BATTERY_LEVEL: =!"
+call :require_device || goto wait_menu
+set "battery_log=%TEMP%\galaxy-assistant-%RANDOM%-%RANDOM%.txt"
+adb shell dumpsys battery >"%battery_log%" 2>nul
+if errorlevel 1 (
+  echo Failed to read battery information.
+  del /q "%battery_log%" >nul 2>&1
+  goto wait_menu
 )
-
-:: Battery Voltage
-for /f "tokens=2" %%A in ('findstr /C:"voltage: " battery_log.txt') do (
-    set /a "VOLTAGE=%%A"
-    set /a "BATTERY_VOLTAGE=VOLTAGE / 1000"
-    set /a "VOLTAGE_DECIMAL=VOLTAGE %% 1000"
+set "level=N/A"
+set "voltage=N/A"
+set "health=N/A"
+set "usage=N/A"
+for /f "tokens=2 delims=:" %%A in ('findstr /r /c:"^[ ]*level:" "%battery_log%"') do set "level=%%A"
+for /f "tokens=2 delims=:" %%A in ('findstr /r /c:"^[ ]*voltage:" "%battery_log%"') do set "voltage=%%A"
+for /f "tokens=2 delims=:" %%A in ('findstr /c:"mSavedBatteryAsoc" "%battery_log%"') do set "health=%%A"
+for /f "tokens=2 delims=:" %%A in ('findstr /c:"mSavedBatteryUsage" "%battery_log%"') do set "usage=%%A"
+for %%V in (level voltage health usage) do for /f "tokens=*" %%A in ("!%%V!") do set "%%V=%%A"
+set "voltage_text=%voltage% mV"
+set "cycles=N/A"
+set /a voltage_number=voltage 2>nul
+if not errorlevel 1 (
+  set /a voltage_whole=voltage_number / 1000, voltage_fraction=voltage_number %% 1000
+  set "voltage_fraction=00!voltage_fraction!"
+  set "voltage_text=!voltage_whole!.!voltage_fraction:~-3! V"
 )
+set /a usage_number=usage 2>nul
+if not errorlevel 1 set /a cycles=usage_number / 100
+echo Battery level: %level%%%
+echo Battery voltage: %voltage_text%
+echo Battery health: %health%%%
+echo Estimated cycles: %cycles%
+del /q "%battery_log%" >nul 2>&1
+goto wait_menu
 
-:: Cycle Count
-set /a "BATTERY_CYCLE=BATTERY_USAGE / 100"
-
-:: Charging Status Text
-set "AC_STATUS=No"
-set "USB_STATUS=No"
-if "%CHARGE_AC%"=="true" set "AC_STATUS=Yes"
-if "%CHARGE_USB%"=="true" set "USB_STATUS=Yes"
-
+:wait_menu
 echo.
-echo ================================================================================================
-echo Battery Status:
-echo.
-echo AC Charging: %AC_STATUS%
-echo USB Charging: %USB_STATUS%
-echo.
-echo Battery Level: %BATTERY_LEVEL%[%%]
-echo Battery Voltage: %BATTERY_VOLTAGE%.%VOLTAGE_DECIMAL%[V]
-echo Battery Health: %BATTERY_HEALTH%[%%]
-echo Cycle Count: %BATTERY_CYCLE%
-echo.
-echo ================================================================================================
-echo.
-echo -Message-
-echo.
-if errorlevel 1 echo Failed to retrieve battery information. Please check your connection.
-if not errorlevel 1 echo Successfully retrieved battery information.
-echo.
-echo ================================================================================================
-echo.
-echo -Log-
-echo.
-taskkill /f /t /IM adb.exe >nul 2>&1
-if errorlevel 1 echo Could not terminate ADB service (not running).
-if not errorlevel 1 echo Successfully terminated ADB service.
-echo.
-echo ================================================================================================
-pause >nul | set /p "=Press any key to return to the main menu."
-goto MainMenu
-
-:ExitScript
-taskkill /f /t /IM adb.exe >nul 2>&1
-exit
+pause
+goto menu
