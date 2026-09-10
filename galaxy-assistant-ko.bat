@@ -14,7 +14,8 @@ echo 1. USB 디버깅 활성화 방법
 echo 2. 카메라 셔터음 설정 비활성화
 echo 3. 카메라 셔터음 설정 복원
 echo 4. 배터리 정보 확인
-echo 5. 종료
+echo 5. Camsung 설치
+echo 6. 종료
 echo.
 set "choice="
 set /p "choice=메뉴 번호를 입력하세요: "
@@ -22,7 +23,8 @@ if "%choice%"=="1" goto debug_help
 if "%choice%"=="2" goto silence
 if "%choice%"=="3" goto restore
 if "%choice%"=="4" goto battery
-if "%choice%"=="5" exit /b 0
+if "%choice%"=="5" goto install_camsung
+if "%choice%"=="6" exit /b 0
 goto menu
 
 :require_adb
@@ -107,6 +109,58 @@ echo 배터리 전압: %voltage_text%
 echo 배터리 수명: %health%%%
 echo 예상 사이클: %cycles%회
 del /q "%battery_log%" >nul 2>&1
+goto wait_menu
+
+:install_camsung
+cls
+call :require_device || goto wait_menu
+echo Camsung 1.2.1을 공식 GitHub 릴리스에서 내려받아 설치합니다.
+echo 출처: https://github.com/ericswpark/camsung
+echo.
+choice /c YN /n /m "계속하시겠습니까? [Y/N]: "
+if errorlevel 2 goto menu
+
+set "camsung_version=1.2.1"
+set "camsung_url=https://github.com/ericswpark/camsung/releases/download/1.2.1/app-release.apk"
+set "camsung_sha256=C6E0087EE2E5AF899E3245902A21A788D8A6DDCEA137825B1E25C38871BE38F5"
+set "camsung_apk=%TEMP%\camsung-1.2.1-%RANDOM%-%RANDOM%.apk"
+set "download_sha="
+echo APK를 내려받는 중입니다...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri $env:camsung_url -OutFile $env:camsung_apk"
+if errorlevel 1 (
+  echo APK 다운로드에 실패했습니다.
+  del /q "%camsung_apk%" >nul 2>&1
+  goto wait_menu
+)
+
+for /f "usebackq delims=" %%H in (`powershell -NoProfile -Command "(Get-FileHash -Algorithm SHA256 -LiteralPath $env:camsung_apk).Hash"`) do set "download_sha=%%H"
+if /i not "!download_sha!"=="!camsung_sha256!" (
+  echo APK 무결성 검증에 실패하여 설치를 중단했습니다.
+  del /q "%camsung_apk%" >nul 2>&1
+  goto wait_menu
+)
+
+set "android_sdk="
+set "android_sdk_number=0"
+for /f "delims=" %%A in ('adb shell getprop ro.build.version.sdk 2^>nul') do set "android_sdk=%%A"
+echo Android SDK: !android_sdk!
+if defined android_sdk (
+  set /a android_sdk_number=android_sdk 2>nul
+)
+if !android_sdk_number! GEQ 34 (
+  adb install --bypass-low-target-sdk-block -r "%camsung_apk%"
+) else (
+  adb install -r "%camsung_apk%"
+)
+set "install_result=!errorlevel!"
+del /q "%camsung_apk%" >nul 2>&1
+if not "!install_result!"=="0" (
+  echo Camsung 설치에 실패했습니다.
+) else (
+  echo Camsung 설치가 완료되었습니다.
+  echo 휴대전화에서 앱을 열고 스위치를 켜세요. 부팅 시 자동 적용은 잠금 아이콘을 누르세요.
+  echo 카메라 무음 기능을 사용할 때는 휴대전화를 진동 또는 무음 모드로 설정하세요.
+)
 goto wait_menu
 
 :wait_menu
