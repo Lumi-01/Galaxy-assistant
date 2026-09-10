@@ -24,9 +24,9 @@ A small Windows/ADB utility for Samsung Galaxy devices. It can toggle the camera
 
 - [Korean script](galaxy-assistant-ko.bat)
 - [English script](galaxy-assistant-en.bat)
-- [Legacy ZIP bundle](https://github.com/Lumi-01/Galaxy-assistant/raw/refs/heads/main/Galaxy%20assistant.zip)
+- [ZIP bundle](https://github.com/Lumi-01/Galaxy-assistant/raw/refs/heads/main/Galaxy%20assistant.zip)
 
-The source scripts are the current version. The ZIP is retained for compatibility and may be updated separately.
+The ZIP contains the same current Korean and English batch scripts for convenient download.
 
 ## Compatibility notes
 
