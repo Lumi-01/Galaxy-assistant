@@ -43,7 +43,7 @@ if errorlevel 1 (
 exit /b 0
 
 :require_device
-adb get-state 2>nul | findstr /x /c:"device" >nul
+call adb get-state 2>nul | findstr /x /c:"device" >nul
 if errorlevel 1 (
   echo 승인된 기기를 찾지 못했습니다. USB 연결을 확인하고 휴대전화에서 디버깅을 허용하세요.
   exit /b 1
@@ -62,7 +62,7 @@ goto menu
 :silence
 cls
 call :require_device || goto wait_menu
-adb shell settings put system csc_pref_camera_forced_shuttersound_key 0
+call adb shell settings put system csc_pref_camera_forced_shuttersound_key 0
 if errorlevel 1 (
   echo 설정 변경에 실패했습니다.
 ) else (
@@ -73,7 +73,7 @@ goto wait_menu
 :restore
 cls
 call :require_device || goto wait_menu
-adb shell settings put system csc_pref_camera_forced_shuttersound_key 1
+call adb shell settings put system csc_pref_camera_forced_shuttersound_key 1
 if errorlevel 1 (
   echo 설정 복원에 실패했습니다.
 ) else (
@@ -85,7 +85,7 @@ goto wait_menu
 cls
 call :require_device || goto wait_menu
 set "battery_log=%TEMP%\galaxy-assistant-%RANDOM%-%RANDOM%.txt"
-adb shell dumpsys battery >"%battery_log%" 2>nul
+call adb shell dumpsys battery >"%battery_log%" 2>nul
 if errorlevel 1 (
   echo 배터리 정보를 불러오지 못했습니다.
   del /q "%battery_log%" >nul 2>&1
@@ -138,14 +138,14 @@ set "camsung_sha256=C6E0087EE2E5AF899E3245902A21A788D8A6DDCEA137825B1E25C38871BE
 set "camsung_apk=%TEMP%\camsung-1.2.1-%RANDOM%-%RANDOM%.apk"
 set "download_sha="
 echo APK를 내려받는 중입니다...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri $env:camsung_url -OutFile $env:camsung_apk"
+call powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri $env:camsung_url -OutFile $env:camsung_apk"
 if errorlevel 1 (
   echo APK 다운로드에 실패했습니다.
   del /q "%camsung_apk%" >nul 2>&1
   goto install_camsung_done
 )
 
-for /f "usebackq delims=" %%H in (`powershell -NoProfile -Command "(Get-FileHash -Algorithm SHA256 -LiteralPath $env:camsung_apk).Hash"`) do set "download_sha=%%H"
+for /f "usebackq delims=" %%H in (`call powershell -NoProfile -Command "(Get-FileHash -Algorithm SHA256 -LiteralPath $env:camsung_apk).Hash"`) do set "download_sha=%%H"
 if /i not "!download_sha!"=="!camsung_sha256!" (
   echo APK 무결성 검증에 실패하여 설치를 중단했습니다.
   del /q "%camsung_apk%" >nul 2>&1
@@ -154,15 +154,15 @@ if /i not "!download_sha!"=="!camsung_sha256!" (
 
 set "android_sdk="
 set "android_sdk_number=0"
-for /f "delims=" %%A in ('adb shell getprop ro.build.version.sdk 2^>nul') do set "android_sdk=%%A"
+for /f "delims=" %%A in ('call adb shell getprop ro.build.version.sdk 2^>nul') do set "android_sdk=%%A"
 echo Android SDK: !android_sdk!
 if defined android_sdk (
   set /a android_sdk_number=android_sdk 2>nul
 )
 if !android_sdk_number! GEQ 34 (
-  adb install --bypass-low-target-sdk-block -r "%camsung_apk%"
+  call adb install --bypass-low-target-sdk-block -r "%camsung_apk%"
 ) else (
-  adb install -r "%camsung_apk%"
+  call adb install -r "%camsung_apk%"
 )
 set "install_result=!errorlevel!"
 del /q "%camsung_apk%" >nul 2>&1
