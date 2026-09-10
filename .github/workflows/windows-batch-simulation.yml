@@ -1,0 +1,95 @@
+name: Windows batch simulation
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-batch-simulation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  simulate:
+    runs-on: windows-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Check both menu layouts
+        shell: pwsh
+        run: |
+          $english = Get-Content -Raw -Encoding utf8 galaxy-assistant-en.bat
+          $korean = Get-Content -Raw -Encoding utf8 galaxy-assistant-ko.bat
+          if (-not $english.Contains('echo 5. Install Camsung')) { throw 'English install menu is missing.' }
+          if (-not $english.Contains('echo 6. Exit')) { throw 'English exit menu is missing.' }
+          if (-not $korean.Contains('echo 5. Camsung 설치')) { throw 'Korean install menu is missing.' }
+          if (-not $korean.Contains('echo 6. 종료')) { throw 'Korean exit menu is missing.' }
+
+      - name: Simulate Android 14 installation
+        shell: cmd
+        run: |
+          set "PATH=%CD%\tests\mocks;%PATH%"
+          set "MOCK_ANDROID_SDK=35"
+          set "MOCK_ADB_LOG=%TEMP%\galaxy-adb-14.log"
+          >galaxy-ci-output.txt echo Starting Android 14 simulation
+          where adb >>galaxy-ci-output.txt 2>&1
+          where powershell >>galaxy-ci-output.txt 2>&1
+          call galaxy-assistant-en.bat --install-camsung >>galaxy-ci-output.txt 2>&1
+          set "SCRIPT_EXIT=%ERRORLEVEL%"
+          if exist "%MOCK_ADB_LOG%" type "%MOCK_ADB_LOG%" >>galaxy-ci-output.txt
+          type galaxy-ci-output.txt
+          if not "%SCRIPT_EXIT%"=="0" exit /b %SCRIPT_EXIT%
+          findstr /c:"install --bypass-low-target-sdk-block -r" "%MOCK_ADB_LOG%" >nul
+          if errorlevel 1 exit /b 1
+
+      - name: Simulate Android 13 installation
+        shell: cmd
+        run: |
+          set "PATH=%CD%\tests\mocks;%PATH%"
+          set "MOCK_ANDROID_SDK=33"
+          set "MOCK_ADB_LOG=%TEMP%\galaxy-adb-13.log"
+          call galaxy-assistant-ko.bat --install-camsung
+          if errorlevel 1 exit /b 1
+          findstr /c:"install -r" "%MOCK_ADB_LOG%" >nul
+          if errorlevel 1 exit /b 1
+          findstr /c:"--bypass-low-target-sdk-block" "%MOCK_ADB_LOG%" >nul
+          if not errorlevel 1 exit /b 1
+          exit /b 0
+
+      - name: Reject a missing device
+        shell: cmd
+        run: |
+          set "PATH=%CD%\tests\mocks;%PATH%"
+          set "MOCK_DEVICE_STATE=missing"
+          call galaxy-assistant-en.bat --install-camsung
+          if not errorlevel 1 exit /b 1
+          exit /b 0
+
+      - name: Reject an APK hash mismatch
+        shell: cmd
+        run: |
+          set "PATH=%CD%\tests\mocks;%PATH%"
+          set "MOCK_ANDROID_SDK=35"
+          set "MOCK_HASH_MISMATCH=1"
+          set "MOCK_ADB_LOG=%TEMP%\galaxy-adb-hash.log"
+          if exist "%MOCK_ADB_LOG%" del /q "%MOCK_ADB_LOG%"
+          call galaxy-assistant-en.bat --install-camsung
+          if not errorlevel 1 exit /b 1
+          if exist "%MOCK_ADB_LOG%" exit /b 1
+          exit /b 0
+
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-batch-diagnostics
+          path: |
+            galaxy-ci-output.txt
+            ${{ runner.temp }}\galaxy-adb-14.log
+          if-no-files-found: ignore

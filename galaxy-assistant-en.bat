@@ -4,6 +4,12 @@ title Galaxy Assistant
 
 call :require_adb || exit /b 1
 
+if /i "%~1"=="--install-camsung" (
+  set "non_interactive=1"
+  set "assume_yes=1"
+  goto install_camsung
+)
+
 :menu
 cls
 echo ================================================================
@@ -36,7 +42,7 @@ if errorlevel 1 (
 exit /b 0
 
 :require_device
-adb get-state 2>nul | findstr /x /c:"device" >nul
+call adb get-state 2>nul | findstr /x /c:"device" >nul
 if errorlevel 1 (
   echo No authorized device was found. Check the USB cable and approve USB debugging on the phone.
   exit /b 1
@@ -55,7 +61,7 @@ goto menu
 :silence
 cls
 call :require_device || goto wait_menu
-adb shell settings put system csc_pref_camera_forced_shuttersound_key 0
+call adb shell settings put system csc_pref_camera_forced_shuttersound_key 0
 if errorlevel 1 (
   echo Failed to change the setting.
 ) else (
@@ -66,7 +72,7 @@ goto wait_menu
 :restore
 cls
 call :require_device || goto wait_menu
-adb shell settings put system csc_pref_camera_forced_shuttersound_key 1
+call adb shell settings put system csc_pref_camera_forced_shuttersound_key 1
 if errorlevel 1 (
   echo Failed to restore the setting.
 ) else (
@@ -78,7 +84,7 @@ goto wait_menu
 cls
 call :require_device || goto wait_menu
 set "battery_log=%TEMP%\galaxy-assistant-%RANDOM%-%RANDOM%.txt"
-adb shell dumpsys battery >"%battery_log%" 2>nul
+call adb shell dumpsys battery >"%battery_log%" 2>nul
 if errorlevel 1 (
   echo Failed to read battery information.
   del /q "%battery_log%" >nul 2>&1
@@ -112,12 +118,18 @@ goto wait_menu
 
 :install_camsung
 cls
-call :require_device || goto wait_menu
+set "action_result=1"
+call :require_device || goto install_camsung_done
 echo This installs Camsung 1.2.1 from its official GitHub release.
 echo Source: https://github.com/ericswpark/camsung
 echo.
-choice /c YN /n /m "Continue? [Y/N]: "
-if errorlevel 2 goto menu
+if not defined assume_yes (
+  choice /c YN /n /m "Continue? [Y/N]: "
+  if errorlevel 2 (
+    set "action_result=2"
+    goto install_camsung_done
+  )
+)
 
 set "camsung_version=1.2.1"
 set "camsung_url=https://github.com/ericswpark/camsung/releases/download/1.2.1/app-release.apk"
@@ -125,41 +137,46 @@ set "camsung_sha256=C6E0087EE2E5AF899E3245902A21A788D8A6DDCEA137825B1E25C38871BE
 set "camsung_apk=%TEMP%\camsung-1.2.1-%RANDOM%-%RANDOM%.apk"
 set "download_sha="
 echo Downloading the APK...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri $env:camsung_url -OutFile $env:camsung_apk"
+call powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri $env:camsung_url -OutFile $env:camsung_apk"
 if errorlevel 1 (
   echo Failed to download the APK.
   del /q "%camsung_apk%" >nul 2>&1
-  goto wait_menu
+  goto install_camsung_done
 )
 
-for /f "usebackq delims=" %%H in (`powershell -NoProfile -Command "(Get-FileHash -Algorithm SHA256 -LiteralPath $env:camsung_apk).Hash"`) do set "download_sha=%%H"
+for /f "usebackq delims=" %%H in (`call powershell -NoProfile -Command "(Get-FileHash -Algorithm SHA256 -LiteralPath $env:camsung_apk).Hash"`) do set "download_sha=%%H"
 if /i not "!download_sha!"=="!camsung_sha256!" (
   echo APK integrity verification failed. Installation was stopped.
   del /q "%camsung_apk%" >nul 2>&1
-  goto wait_menu
+  goto install_camsung_done
 )
 
 set "android_sdk="
 set "android_sdk_number=0"
-for /f "delims=" %%A in ('adb shell getprop ro.build.version.sdk 2^>nul') do set "android_sdk=%%A"
+for /f "delims=" %%A in ('call adb shell getprop ro.build.version.sdk 2^>nul') do set "android_sdk=%%A"
 echo Android SDK: !android_sdk!
 if defined android_sdk (
   set /a android_sdk_number=android_sdk 2>nul
 )
 if !android_sdk_number! GEQ 34 (
-  adb install --bypass-low-target-sdk-block -r "%camsung_apk%"
+  call adb install --bypass-low-target-sdk-block -r "%camsung_apk%"
 ) else (
-  adb install -r "%camsung_apk%"
+  call adb install -r "%camsung_apk%"
 )
 set "install_result=!errorlevel!"
 del /q "%camsung_apk%" >nul 2>&1
 if not "!install_result!"=="0" (
   echo Failed to install Camsung.
+  set "action_result=!install_result!"
 ) else (
   echo Camsung was installed successfully.
   echo Open the app and enable its switch. Tap the lock icon to reapply it after boot.
   echo Set the phone to Vibrate or Mute when using the silent-camera feature.
+  set "action_result=0"
 )
+
+:install_camsung_done
+if defined non_interactive exit /b !action_result!
 goto wait_menu
 
 :wait_menu
