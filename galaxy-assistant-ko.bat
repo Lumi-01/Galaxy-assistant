@@ -5,6 +5,12 @@ title Galaxy Assistant
 
 call :require_adb || exit /b 1
 
+if /i "%~1"=="--install-camsung" (
+  set "non_interactive=1"
+  set "assume_yes=1"
+  goto install_camsung
+)
+
 :menu
 cls
 echo ================================================================
@@ -113,12 +119,18 @@ goto wait_menu
 
 :install_camsung
 cls
-call :require_device || goto wait_menu
+set "action_result=1"
+call :require_device || goto install_camsung_done
 echo Camsung 1.2.1을 공식 GitHub 릴리스에서 내려받아 설치합니다.
 echo 출처: https://github.com/ericswpark/camsung
 echo.
-choice /c YN /n /m "계속하시겠습니까? [Y/N]: "
-if errorlevel 2 goto menu
+if not defined assume_yes (
+  choice /c YN /n /m "계속하시겠습니까? [Y/N]: "
+  if errorlevel 2 (
+    set "action_result=2"
+    goto install_camsung_done
+  )
+)
 
 set "camsung_version=1.2.1"
 set "camsung_url=https://github.com/ericswpark/camsung/releases/download/1.2.1/app-release.apk"
@@ -130,14 +142,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='Sil
 if errorlevel 1 (
   echo APK 다운로드에 실패했습니다.
   del /q "%camsung_apk%" >nul 2>&1
-  goto wait_menu
+  goto install_camsung_done
 )
 
 for /f "usebackq delims=" %%H in (`powershell -NoProfile -Command "(Get-FileHash -Algorithm SHA256 -LiteralPath $env:camsung_apk).Hash"`) do set "download_sha=%%H"
 if /i not "!download_sha!"=="!camsung_sha256!" (
   echo APK 무결성 검증에 실패하여 설치를 중단했습니다.
   del /q "%camsung_apk%" >nul 2>&1
-  goto wait_menu
+  goto install_camsung_done
 )
 
 set "android_sdk="
@@ -156,11 +168,16 @@ set "install_result=!errorlevel!"
 del /q "%camsung_apk%" >nul 2>&1
 if not "!install_result!"=="0" (
   echo Camsung 설치에 실패했습니다.
+  set "action_result=!install_result!"
 ) else (
   echo Camsung 설치가 완료되었습니다.
   echo 휴대전화에서 앱을 열고 스위치를 켜세요. 부팅 시 자동 적용은 잠금 아이콘을 누르세요.
   echo 카메라 무음 기능을 사용할 때는 휴대전화를 진동 또는 무음 모드로 설정하세요.
+  set "action_result=0"
 )
+
+:install_camsung_done
+if defined non_interactive exit /b !action_result!
 goto wait_menu
 
 :wait_menu

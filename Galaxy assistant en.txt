@@ -4,6 +4,12 @@ title Galaxy Assistant
 
 call :require_adb || exit /b 1
 
+if /i "%~1"=="--install-camsung" (
+  set "non_interactive=1"
+  set "assume_yes=1"
+  goto install_camsung
+)
+
 :menu
 cls
 echo ================================================================
@@ -112,12 +118,18 @@ goto wait_menu
 
 :install_camsung
 cls
-call :require_device || goto wait_menu
+set "action_result=1"
+call :require_device || goto install_camsung_done
 echo This installs Camsung 1.2.1 from its official GitHub release.
 echo Source: https://github.com/ericswpark/camsung
 echo.
-choice /c YN /n /m "Continue? [Y/N]: "
-if errorlevel 2 goto menu
+if not defined assume_yes (
+  choice /c YN /n /m "Continue? [Y/N]: "
+  if errorlevel 2 (
+    set "action_result=2"
+    goto install_camsung_done
+  )
+)
 
 set "camsung_version=1.2.1"
 set "camsung_url=https://github.com/ericswpark/camsung/releases/download/1.2.1/app-release.apk"
@@ -129,14 +141,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='Sil
 if errorlevel 1 (
   echo Failed to download the APK.
   del /q "%camsung_apk%" >nul 2>&1
-  goto wait_menu
+  goto install_camsung_done
 )
 
 for /f "usebackq delims=" %%H in (`powershell -NoProfile -Command "(Get-FileHash -Algorithm SHA256 -LiteralPath $env:camsung_apk).Hash"`) do set "download_sha=%%H"
 if /i not "!download_sha!"=="!camsung_sha256!" (
   echo APK integrity verification failed. Installation was stopped.
   del /q "%camsung_apk%" >nul 2>&1
-  goto wait_menu
+  goto install_camsung_done
 )
 
 set "android_sdk="
@@ -155,11 +167,16 @@ set "install_result=!errorlevel!"
 del /q "%camsung_apk%" >nul 2>&1
 if not "!install_result!"=="0" (
   echo Failed to install Camsung.
+  set "action_result=!install_result!"
 ) else (
   echo Camsung was installed successfully.
   echo Open the app and enable its switch. Tap the lock icon to reapply it after boot.
   echo Set the phone to Vibrate or Mute when using the silent-camera feature.
+  set "action_result=0"
 )
+
+:install_camsung_done
+if defined non_interactive exit /b !action_result!
 goto wait_menu
 
 :wait_menu

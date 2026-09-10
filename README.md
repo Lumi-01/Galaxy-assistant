@@ -28,6 +28,10 @@ A small Windows/ADB utility for Samsung Galaxy devices. It can toggle the camera
 
 The ZIP contains the same current Korean and English batch scripts for convenient download.
 
+## Automated tests
+
+GitHub Actions runs the scripts on Windows with mocked ADB and PowerShell commands. It checks menu exit, Android 13 and Android 14 installation branches, missing-device handling, and APK hash rejection. The non-interactive `--install-camsung` argument exists for this test path; normal users can continue to use menu `5`.
+
 ## Compatibility notes
 
 - Tested on Galaxy S25+ with One UI 8.1.

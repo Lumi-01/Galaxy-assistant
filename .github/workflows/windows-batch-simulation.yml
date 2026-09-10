@@ -1,0 +1,73 @@
+name: Windows batch simulation
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  simulate:
+    runs-on: windows-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Check both menu exit paths
+        shell: cmd
+        run: |
+          set "PATH=%CD%\tests\mocks;%PATH%"
+          >menu-input.txt echo 6
+          call galaxy-assistant-en.bat < menu-input.txt
+          if errorlevel 1 exit /b 1
+          call galaxy-assistant-ko.bat < menu-input.txt
+          if errorlevel 1 exit /b 1
+
+      - name: Simulate Android 14 installation
+        shell: cmd
+        run: |
+          set "PATH=%CD%\tests\mocks;%PATH%"
+          set "MOCK_ANDROID_SDK=35"
+          set "MOCK_ADB_LOG=%TEMP%\galaxy-adb-14.log"
+          call galaxy-assistant-en.bat --install-camsung
+          if errorlevel 1 exit /b 1
+          findstr /c:"install --bypass-low-target-sdk-block -r" "%MOCK_ADB_LOG%" >nul
+          if errorlevel 1 exit /b 1
+
+      - name: Simulate Android 13 installation
+        shell: cmd
+        run: |
+          set "PATH=%CD%\tests\mocks;%PATH%"
+          set "MOCK_ANDROID_SDK=33"
+          set "MOCK_ADB_LOG=%TEMP%\galaxy-adb-13.log"
+          call galaxy-assistant-ko.bat --install-camsung
+          if errorlevel 1 exit /b 1
+          findstr /c:"install -r" "%MOCK_ADB_LOG%" >nul
+          if errorlevel 1 exit /b 1
+          findstr /c:"--bypass-low-target-sdk-block" "%MOCK_ADB_LOG%" >nul
+          if not errorlevel 1 exit /b 1
+
+      - name: Reject a missing device
+        shell: cmd
+        run: |
+          set "PATH=%CD%\tests\mocks;%PATH%"
+          set "MOCK_DEVICE_STATE=missing"
+          call galaxy-assistant-en.bat --install-camsung
+          if not errorlevel 1 exit /b 1
+          exit /b 0
+
+      - name: Reject an APK hash mismatch
+        shell: cmd
+        run: |
+          set "PATH=%CD%\tests\mocks;%PATH%"
+          set "MOCK_ANDROID_SDK=35"
+          set "MOCK_HASH_MISMATCH=1"
+          set "MOCK_ADB_LOG=%TEMP%\galaxy-adb-hash.log"
+          if exist "%MOCK_ADB_LOG%" del /q "%MOCK_ADB_LOG%"
+          call galaxy-assistant-en.bat --install-camsung
+          if not errorlevel 1 exit /b 1
+          if exist "%MOCK_ADB_LOG%" exit /b 1
+          exit /b 0
