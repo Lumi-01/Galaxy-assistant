@@ -37,8 +37,13 @@ jobs:
           set "PATH=%CD%\tests\mocks;%PATH%"
           set "MOCK_ANDROID_SDK=35"
           set "MOCK_ADB_LOG=%TEMP%\galaxy-adb-14.log"
-          call galaxy-assistant-en.bat --install-camsung
-          if errorlevel 1 exit /b 1
+          call galaxy-assistant-en.bat --install-camsung >"%TEMP%\galaxy-ci-output.txt" 2>&1
+          set "SCRIPT_EXIT=%ERRORLEVEL%"
+          where adb >>"%TEMP%\galaxy-ci-output.txt" 2>&1
+          where powershell >>"%TEMP%\galaxy-ci-output.txt" 2>&1
+          if exist "%MOCK_ADB_LOG%" type "%MOCK_ADB_LOG%" >>"%TEMP%\galaxy-ci-output.txt"
+          type "%TEMP%\galaxy-ci-output.txt"
+          if not "%SCRIPT_EXIT%"=="0" exit /b %SCRIPT_EXIT%
           findstr /c:"install --bypass-low-target-sdk-block -r" "%MOCK_ADB_LOG%" >nul
           if errorlevel 1 exit /b 1
 
@@ -76,3 +81,13 @@ jobs:
           if not errorlevel 1 exit /b 1
           if exist "%MOCK_ADB_LOG%" exit /b 1
           exit /b 0
+
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-batch-diagnostics
+          path: |
+            ${{ runner.temp }}\galaxy-ci-output.txt
+            ${{ runner.temp }}\galaxy-adb-14.log
+          if-no-files-found: ignore
