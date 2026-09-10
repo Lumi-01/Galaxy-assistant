@@ -22,16 +22,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Check both menu layouts
-        shell: cmd
+        shell: pwsh
         run: |
-          findstr /c:"echo 5. Install Camsung" galaxy-assistant-en.bat >nul
-          if errorlevel 1 exit /b 1
-          findstr /c:"echo 6. Exit" galaxy-assistant-en.bat >nul
-          if errorlevel 1 exit /b 1
-          findstr /c:"echo 5. Camsung 설치" galaxy-assistant-ko.bat >nul
-          if errorlevel 1 exit /b 1
-          findstr /c:"echo 6. 종료" galaxy-assistant-ko.bat >nul
-          if errorlevel 1 exit /b 1
+          $english = Get-Content -Raw -Encoding utf8 galaxy-assistant-en.bat
+          $korean = Get-Content -Raw -Encoding utf8 galaxy-assistant-ko.bat
+          if (-not $english.Contains('echo 5. Install Camsung')) { throw 'English install menu is missing.' }
+          if (-not $english.Contains('echo 6. Exit')) { throw 'English exit menu is missing.' }
+          if (-not $korean.Contains('echo 5. Camsung 설치')) { throw 'Korean install menu is missing.' }
+          if (-not $korean.Contains('echo 6. 종료')) { throw 'Korean exit menu is missing.' }
 
       - name: Simulate Android 14 installation
         shell: cmd
