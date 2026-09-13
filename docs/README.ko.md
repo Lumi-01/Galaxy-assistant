@@ -18,12 +18,12 @@
 - `2`: 카메라 셔터음 설정 비활성화
 - `3`: 카메라 셔터음 설정 복원
 - `4`: 배터리 정보 확인
-- `5`: 공식 Camsung 1.2.1 APK 다운로드·검증·설치
+- `5`: 공식 Camsung 최신 버전 확인·다운로드·검증·설치
 - `6`: 종료
 
 ## Camsung 설치
 
-메뉴 `5`는 [Camsung 공식 GitHub 저장소](https://github.com/ericswpark/camsung)의 1.2.1 APK를 내려받습니다. 배포자가 공개한 SHA-256과 일치하는지 확인한 후에만 설치하며, Android 14 이상에서는 필요한 `--bypass-low-target-sdk-block` 옵션을 자동으로 사용합니다.
+메뉴 `5`는 [Camsung 공식 GitHub 저장소](https://github.com/ericswpark/camsung)의 최신 릴리스를 확인합니다. 최신 APK와 GitHub가 제공하는 SHA-256 정보를 받아 무결성이 일치할 때만 설치하며, Android 14 이상에서는 필요한 `--bypass-low-target-sdk-block` 옵션을 자동으로 사용합니다. 최신 릴리스 조회나 해시 검증에 실패하면 설치하지 않습니다.
 
 설치가 끝나면 휴대전화에서 Camsung을 열고 스위치를 켭니다. 부팅할 때마다 다시 적용하려면 잠금 아이콘을 누릅니다. 카메라 무음 기능을 사용할 때는 휴대전화를 진동 또는 무음 모드로 설정해야 합니다.
 

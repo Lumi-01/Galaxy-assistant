@@ -65,6 +65,7 @@ jobs:
           set "PATH=%CD%\tests\mocks;%PATH%"
           set "GALAXY_ASSISTANT_ADB=adb"
           set "MOCK_ANDROID_SDK=35"
+          set "MOCK_CAMSUNG_VERSION=9.9.9"
           set "MOCK_ADB_LOG=%TEMP%\galaxy-adb-14.log"
           >galaxy-ci-output.txt echo Starting Android 14 simulation
           where adb >>galaxy-ci-output.txt 2>&1
@@ -74,6 +75,8 @@ jobs:
           if exist "%MOCK_ADB_LOG%" type "%MOCK_ADB_LOG%" >>galaxy-ci-output.txt
           type galaxy-ci-output.txt
           if not "%SCRIPT_EXIT%"=="0" exit /b %SCRIPT_EXIT%
+          findstr /c:"Latest Camsung version: 9.9.9" galaxy-ci-output.txt >nul
+          if errorlevel 1 exit /b 1
           findstr /c:"install --bypass-low-target-sdk-block -r" "%MOCK_ADB_LOG%" >nul
           if errorlevel 1 exit /b 1
 

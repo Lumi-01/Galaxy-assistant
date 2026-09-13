@@ -18,12 +18,12 @@ Keep the `platform-tools` folder beside the batch files. Moving only a batch fil
 - `2`: Disable the forced shutter-sound setting
 - `3`: Restore the shutter-sound setting
 - `4`: Display available battery information
-- `5`: Download, verify, and install the official Camsung 1.2.1 APK
+- `5`: Check, download, verify, and install the latest official Camsung release
 - `6`: Exit
 
 ## Installing Camsung
 
-Menu `5` downloads the 1.2.1 APK from the [official Camsung GitHub repository](https://github.com/ericswpark/camsung). It installs the APK only after matching the SHA-256 published with the release, and automatically uses the required `--bypass-low-target-sdk-block` option on Android 14 or later.
+Menu `5` checks the latest release in the [official Camsung GitHub repository](https://github.com/ericswpark/camsung). It downloads the latest APK and GitHub-provided SHA-256 digest, installs only after they match, and automatically uses the required `--bypass-low-target-sdk-block` option on Android 14 or later. It stops without installing if the latest-release lookup or hash verification fails.
 
 After installation, open Camsung on the phone and enable its switch. Tap the lock icon to reapply the setting after each boot. The phone must be in Vibrate or Mute mode when using the silent-camera feature.
 

@@ -124,7 +124,7 @@ goto wait_menu
 cls
 set "action_result=1"
 call :require_device || goto install_camsung_done
-echo This installs Camsung 1.2.1 from its official GitHub release.
+echo This checks the official GitHub release and installs the latest Camsung APK.
 echo Source: https://github.com/ericswpark/camsung
 echo.
 if not defined assume_yes (
@@ -135,10 +135,22 @@ if not defined assume_yes (
   )
 )
 
-set "camsung_version=1.2.1"
-set "camsung_url=https://github.com/ericswpark/camsung/releases/download/1.2.1/app-release.apk"
-set "camsung_sha256=C6E0087EE2E5AF899E3245902A21A788D8A6DDCEA137825B1E25C38871BE38F5"
-set "camsung_apk=%TEMP%\camsung-1.2.1-%RANDOM%-%RANDOM%.apk"
+set "camsung_api=https://api.github.com/repos/ericswpark/camsung/releases/latest"
+set "camsung_version="
+set "camsung_url="
+set "camsung_sha256="
+echo Checking the latest release...
+for /f "tokens=1-3 delims=;" %%A in ('call powershell -NoProfile -Command "$ErrorActionPreference='Stop'; $r=Invoke-RestMethod -Headers @{'User-Agent'='Galaxy-Assistant'} -Uri $env:camsung_api; $a=$null; foreach($candidate in $r.assets){if($candidate.name -eq 'app-release.apk'){$a=$candidate; break}}; if(-not $a -or $r.tag_name -notmatch '^[0-9A-Za-z._-]+$' -or $a.digest -notmatch '^sha256:[0-9a-fA-F]{64}$'){exit 2}; Write-Output ($r.tag_name+';'+$a.browser_download_url+';'+$a.digest.Substring(7).ToUpperInvariant())" 2^>nul') do (
+  set "camsung_version=%%A"
+  set "camsung_url=%%B"
+  set "camsung_sha256=%%C"
+)
+if not defined camsung_sha256 (
+  echo Failed to verify the latest official release information.
+  goto install_camsung_done
+)
+echo Latest Camsung version: !camsung_version!
+set "camsung_apk=%TEMP%\camsung-!camsung_version!-%RANDOM%-%RANDOM%.apk"
 set "download_sha="
 echo Downloading the APK...
 call powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri $env:camsung_url -OutFile $env:camsung_apk"
