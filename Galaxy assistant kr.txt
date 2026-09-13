@@ -22,8 +22,8 @@ echo ================================================================
 echo Galaxy Assistant
 echo ================================================================
 echo 1. USB 디버깅 활성화 방법
-echo 2. 카메라 셔터음 설정 비활성화
-echo 3. 카메라 셔터음 설정 복원
+echo 2. 카메라 셔터음 비활성화
+echo 3. 카메라 셔터음 활성화
 echo 4. 배터리 정보 확인
 echo 5. Camsung 설치
 echo 6. 종료
@@ -75,7 +75,7 @@ call "%adb_exe%" shell settings put system csc_pref_camera_forced_shuttersound_k
 if errorlevel 1 (
   echo 설정 변경에 실패했습니다.
 ) else (
-  echo 카메라 셔터음 강제 설정을 비활성화했습니다.
+  echo 카메라 셔터음을 비활성화했습니다.
 )
 goto wait_menu
 
@@ -86,7 +86,7 @@ call "%adb_exe%" shell settings put system csc_pref_camera_forced_shuttersound_k
 if errorlevel 1 (
   echo 설정 복원에 실패했습니다.
 ) else (
-  echo 카메라 셔터음 설정을 복원했습니다.
+  echo 카메라 셔터음을 활성화했습니다.
 )
 goto wait_menu
 
