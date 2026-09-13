@@ -14,6 +14,12 @@ if /i "%~1"=="shell" (
       echo 35
     )
   )
+  if /i "%~2"=="dumpsys" if /i "%~3"=="battery" (
+    echo   level: 96
+    echo   voltage: 4292
+    echo   mSavedBatteryAsoc: [96]
+    echo   mSavedBatteryUsage: [58222]
+  )
   exit /b 0
 )
 

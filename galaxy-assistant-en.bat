@@ -4,6 +4,11 @@ title Galaxy Assistant
 
 call :require_adb || exit /b 1
 
+if /i "%~1"=="--battery" (
+  set "non_interactive=1"
+  goto battery
+)
+
 if /i "%~1"=="--install-camsung" (
   set "non_interactive=1"
   set "assume_yes=1"
@@ -103,6 +108,10 @@ for /f "tokens=2 delims=:" %%A in ('findstr /r /c:"^[ ]*voltage:" "%battery_log%
 for /f "tokens=2 delims=:" %%A in ('findstr /c:"mSavedBatteryAsoc" "%battery_log%"') do set "health=%%A"
 for /f "tokens=2 delims=:" %%A in ('findstr /c:"mSavedBatteryUsage" "%battery_log%"') do set "usage=%%A"
 for %%V in (level voltage health usage) do for /f "tokens=*" %%A in ("!%%V!") do set "%%V=%%A"
+set "health=!health:[=!"
+set "health=!health:]=!"
+set "usage=!usage:[=!"
+set "usage=!usage:]=!"
 set "voltage_text=%voltage% mV"
 set "cycles=N/A"
 set /a voltage_number=voltage 2>nul
@@ -118,6 +127,7 @@ echo Battery voltage: %voltage_text%
 echo Battery health: %health%%%
 echo Estimated cycles: %cycles%
 del /q "%battery_log%" >nul 2>&1
+if defined non_interactive exit /b 0
 goto wait_menu
 
 :install_camsung

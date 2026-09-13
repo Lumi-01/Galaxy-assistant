@@ -29,6 +29,7 @@ After installation, open Camsung on the phone and enable its switch. Tap the loc
 
 ## Notes
 
+- Tested on Galaxy S25+ with Android 17 / One UI 9.0 Beta.
 - A system update may reset the setting.
 - The change only applies where device firmware and local regulations permit it.
 - On supported devices, Vibrate or Mute mode may still be required.
