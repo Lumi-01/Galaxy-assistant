@@ -39,6 +39,12 @@ jobs:
             )
             $missing = $required | Where-Object { $_ -notin $entries }
             if ($missing) { throw "ZIP is missing required files: $($missing -join ', ')" }
+            $unexpectedExecutables = $entries | Where-Object {
+              $_ -like 'platform-tools/*.exe' -and $_ -ne 'platform-tools/adb.exe'
+            }
+            if ($unexpectedExecutables) {
+              throw "ZIP contains unrelated Platform Tools executables: $($unexpectedExecutables -join ', ')"
+            }
           } finally {
             $archive.Dispose()
           }

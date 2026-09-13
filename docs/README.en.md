@@ -2,7 +2,7 @@
 
 ## Preparation
 
-1. Extract the complete ZIP into one folder. It includes the official Google Android SDK Platform Tools, so no separate `adb` installation is required.
+1. Extract the complete ZIP into one folder. It includes ADB and its required DLLs from the official Google Platform Tools package, so no separate `adb` installation is required.
 2. On the phone, open **Settings → About phone → Software information**.
 3. Tap **Build number** seven times to enable Developer options.
 4. Open **Settings → Developer options** and enable **USB debugging**.

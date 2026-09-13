@@ -17,7 +17,7 @@ A small Windows/ADB utility for Samsung Galaxy devices. It can toggle the camera
 - Samsung Galaxy device
 - USB cable
 - USB debugging enabled and authorized
-- No separate ADB installation is needed when using the ZIP bundle; it includes the official Google Android SDK Platform Tools for Windows
+- No separate ADB installation is needed when using the ZIP bundle; it includes the official Google ADB runtime for Windows
 - Windows PowerShell and internet access are required only for the Camsung installer
 
 ## Download
@@ -26,9 +26,11 @@ A small Windows/ADB utility for Samsung Galaxy devices. It can toggle the camera
 - [English script](galaxy-assistant-en.bat)
 - [ZIP bundle](https://github.com/Lumi-01/Galaxy-assistant/raw/refs/heads/main/Galaxy%20assistant.zip)
 
-The ZIP contains the Korean and English batch scripts plus Google Android SDK Platform Tools for Windows. Extract the complete ZIP before running a script; do not move only the batch file out of the extracted folder.
+The ZIP contains the Korean and English batch scripts plus the files required to run ADB on Windows. Extract the complete ZIP before running a script; do not move only the batch file out of the extracted folder.
 
 The scripts prefer the bundled `platform-tools\adb.exe`, then an `adb.exe` beside the script, and finally an `adb` available in `PATH`.
+
+The bundled `adb.exe`, `AdbWinApi.dll`, and `AdbWinUsbApi.dll` are included unchanged from Google's Windows Platform Tools 37.0.1 package. Google's `NOTICE.txt` and `source.properties` are included alongside them. Unrelated tools such as `fastboot` are intentionally not bundled.
 
 ## Automated tests
 
@@ -41,4 +43,4 @@ GitHub Actions runs the scripts on Windows with mocked ADB and PowerShell comman
 - The setting only takes effect where the device firmware and local regulations permit it; on supported devices, the phone may also need to be in Vibrate or Mute mode.
 - Battery health and cycle fields are Samsung-specific and may be unavailable on some models or firmware versions.
 - The Camsung installer downloads the pinned official 1.2.1 release and verifies its published SHA-256 before installation. Android 14 or later is handled with the required low-target-SDK bypass flag.
-- Bundled Platform Tools version: 37.0.1. Its license notices are included in `platform-tools/NOTICE.txt`.
+- Bundled ADB version: 37.0.1. Its license notices are included in `platform-tools/NOTICE.txt`.
