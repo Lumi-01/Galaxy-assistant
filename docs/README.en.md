@@ -2,7 +2,7 @@
 
 ## Preparation
 
-1. Install `adb` on the Windows PC or place it next to the batch file.
+1. Extract the complete ZIP into one folder. It includes the official Google Android SDK Platform Tools, so no separate `adb` installation is required.
 2. On the phone, open **Settings → About phone → Software information**.
 3. Tap **Build number** seven times to enable Developer options.
 4. Open **Settings → Developer options** and enable **USB debugging**.
@@ -11,6 +11,8 @@
 ## Run
 
 Run `galaxy-assistant-en.bat`, then enter a menu number.
+
+Keep the `platform-tools` folder beside the batch files. Moving only a batch file elsewhere prevents it from finding the bundled ADB.
 
 - `1`: USB debugging instructions
 - `2`: Disable the forced shutter-sound setting

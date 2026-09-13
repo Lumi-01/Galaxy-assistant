@@ -34,16 +34,20 @@ if "%choice%"=="6" exit /b 0
 goto menu
 
 :require_adb
-where adb >nul 2>&1
-if errorlevel 1 (
-  echo ADB를 찾지 못했습니다. Android Platform Tools를 설치하거나 adb.exe를 이 파일과 같은 폴더에 넣으세요.
+set "adb_exe="
+if defined GALAXY_ASSISTANT_ADB set "adb_exe=%GALAXY_ASSISTANT_ADB%"
+if not defined adb_exe if exist "%~dp0platform-tools\adb.exe" set "adb_exe=%~dp0platform-tools\adb.exe"
+if not defined adb_exe if exist "%~dp0adb.exe" set "adb_exe=%~dp0adb.exe"
+if not defined adb_exe for /f "delims=" %%A in ('where adb 2^>nul') do if not defined adb_exe set "adb_exe=%%A"
+if not defined adb_exe (
+  echo ADB를 찾지 못했습니다. 전체 ZIP을 다시 풀거나 Android Platform Tools를 설치하세요.
   pause
   exit /b 1
 )
 exit /b 0
 
 :require_device
-call adb get-state 2>nul | findstr /x /c:"device" >nul
+call "%adb_exe%" get-state 2>nul | findstr /x /c:"device" >nul
 if errorlevel 1 (
   echo 승인된 기기를 찾지 못했습니다. USB 연결을 확인하고 휴대전화에서 디버깅을 허용하세요.
   exit /b 1
@@ -62,7 +66,7 @@ goto menu
 :silence
 cls
 call :require_device || goto wait_menu
-call adb shell settings put system csc_pref_camera_forced_shuttersound_key 0
+call "%adb_exe%" shell settings put system csc_pref_camera_forced_shuttersound_key 0
 if errorlevel 1 (
   echo 설정 변경에 실패했습니다.
 ) else (
@@ -73,7 +77,7 @@ goto wait_menu
 :restore
 cls
 call :require_device || goto wait_menu
-call adb shell settings put system csc_pref_camera_forced_shuttersound_key 1
+call "%adb_exe%" shell settings put system csc_pref_camera_forced_shuttersound_key 1
 if errorlevel 1 (
   echo 설정 복원에 실패했습니다.
 ) else (
@@ -85,7 +89,7 @@ goto wait_menu
 cls
 call :require_device || goto wait_menu
 set "battery_log=%TEMP%\galaxy-assistant-%RANDOM%-%RANDOM%.txt"
-call adb shell dumpsys battery >"%battery_log%" 2>nul
+call "%adb_exe%" shell dumpsys battery >"%battery_log%" 2>nul
 if errorlevel 1 (
   echo 배터리 정보를 불러오지 못했습니다.
   del /q "%battery_log%" >nul 2>&1
@@ -154,15 +158,15 @@ if /i not "!download_sha!"=="!camsung_sha256!" (
 
 set "android_sdk="
 set "android_sdk_number=0"
-for /f "delims=" %%A in ('call adb shell getprop ro.build.version.sdk 2^>nul') do set "android_sdk=%%A"
+for /f "delims=" %%A in ('call "%adb_exe%" shell getprop ro.build.version.sdk 2^>nul') do set "android_sdk=%%A"
 echo Android SDK: !android_sdk!
 if defined android_sdk (
   set /a android_sdk_number=android_sdk 2>nul
 )
 if !android_sdk_number! GEQ 34 (
-  call adb install --bypass-low-target-sdk-block -r "%camsung_apk%"
+  call "%adb_exe%" install --bypass-low-target-sdk-block -r "%camsung_apk%"
 ) else (
-  call adb install -r "%camsung_apk%"
+  call "%adb_exe%" install -r "%camsung_apk%"
 )
 set "install_result=!errorlevel!"
 del /q "%camsung_apk%" >nul 2>&1
