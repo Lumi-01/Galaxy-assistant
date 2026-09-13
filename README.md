@@ -8,6 +8,7 @@ A small Windows/ADB utility for Samsung Galaxy devices. It can toggle the camera
 
 - Enable or restore the Galaxy camera shutter-sound setting
 - Read battery level, voltage, estimated health, and cycle data when the device exposes those fields
+- Retain every raw `dumpsys battery` result as a timestamped file in the `logs` folder
 - Check, download, verify, and install the latest official Camsung release
 - Korean and English interfaces
 
@@ -42,5 +43,6 @@ GitHub Actions runs the scripts on Windows with mocked ADB and PowerShell comman
 - A system update may reset the shutter-sound setting.
 - The setting only takes effect where the device firmware and local regulations permit it; on supported devices, the phone may also need to be in Vibrate or Mute mode.
 - Battery health and cycle fields are Samsung-specific and may be unavailable on some models or firmware versions.
+- Battery checks keep their complete raw logs in the `logs` folder beside the scripts for later inspection.
 - The Camsung installer queries the official GitHub latest-release API, requires the release asset's SHA-256 digest, and installs the APK only after verifying it. Android 14 or later is handled with the required low-target-SDK bypass flag.
 - Bundled ADB version: 37.0.1. Its license notices are included in `platform-tools/NOTICE.txt`.

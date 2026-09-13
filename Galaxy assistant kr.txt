@@ -92,12 +92,31 @@ goto wait_menu
 
 :battery
 cls
-call :require_device || goto wait_menu
-set "battery_log=%TEMP%\galaxy-assistant-%RANDOM%-%RANDOM%.txt"
+call :require_device
+if errorlevel 1 (
+  if defined non_interactive exit /b 1
+  goto wait_menu
+)
+if defined GALAXY_ASSISTANT_LOG_DIR (
+  set "battery_log_dir=%GALAXY_ASSISTANT_LOG_DIR%"
+) else (
+  set "battery_log_dir=%~dp0logs"
+)
+if not exist "%battery_log_dir%\." mkdir "%battery_log_dir%" >nul 2>&1
+if errorlevel 1 (
+  echo 배터리 로그 폴더를 만들지 못했습니다: %battery_log_dir%
+  if defined non_interactive exit /b 1
+  goto wait_menu
+)
+set "battery_timestamp="
+for /f "delims=" %%A in ('call powershell -NoProfile -Command "Get-Date -Format yyyyMMdd-HHmmss" 2^>nul') do set "battery_timestamp=%%A"
+if not defined battery_timestamp set "battery_timestamp=%RANDOM%-%RANDOM%"
+set "battery_log=%battery_log_dir%\battery-%battery_timestamp%-%RANDOM%.txt"
 call "%adb_exe%" shell dumpsys battery >"%battery_log%" 2>nul
 if errorlevel 1 (
   echo 배터리 정보를 불러오지 못했습니다.
-  del /q "%battery_log%" >nul 2>&1
+  echo 진단 로그를 보관했습니다: %battery_log%
+  if defined non_interactive exit /b 1
   goto wait_menu
 )
 set "level=N/A"
@@ -127,7 +146,7 @@ echo 배터리 잔량: %level%%%
 echo 배터리 전압: %voltage_text%
 echo 배터리 수명: %health%%%
 echo 예상 사이클: %cycles%회
-del /q "%battery_log%" >nul 2>&1
+echo 배터리 원본 로그 저장 위치: %battery_log%
 if defined non_interactive exit /b 0
 goto wait_menu
 

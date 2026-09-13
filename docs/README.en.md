@@ -21,6 +21,8 @@ Keep the `platform-tools` folder beside the batch files. Moving only a batch fil
 - `5`: Check, download, verify, and install the latest official Camsung release
 - `6`: Exit
 
+Each battery check saves the complete raw output in the `logs` folder beside the batch files as `battery-date-time-number.txt`. Logs are not deleted automatically.
+
 ## Installing Camsung
 
 Menu `5` checks the latest release in the [official Camsung GitHub repository](https://github.com/ericswpark/camsung). It downloads the latest APK and GitHub-provided SHA-256 digest, installs only after they match, and automatically uses the required `--bypass-low-target-sdk-block` option on Android 14 or later. It stops without installing if the latest-release lookup or hash verification fails.

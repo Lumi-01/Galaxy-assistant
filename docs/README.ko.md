@@ -21,6 +21,8 @@
 - `5`: 공식 Camsung 최신 버전 확인·다운로드·검증·설치
 - `6`: 종료
 
+배터리 정보를 확인할 때마다 전체 원본 출력이 배치 파일 옆 `logs` 폴더에 `battery-날짜-시간-번호.txt` 형식으로 저장됩니다. 로그는 자동 삭제되지 않습니다.
+
 ## Camsung 설치
 
 메뉴 `5`는 [Camsung 공식 GitHub 저장소](https://github.com/ericswpark/camsung)의 최신 릴리스를 확인합니다. 최신 APK와 GitHub가 제공하는 SHA-256 정보를 받아 무결성이 일치할 때만 설치하며, Android 14 이상에서는 필요한 `--bypass-low-target-sdk-block` 옵션을 자동으로 사용합니다. 최신 릴리스 조회나 해시 검증에 실패하면 설치하지 않습니다.
